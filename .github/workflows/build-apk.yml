@@ -1,0 +1,95 @@
+name: Build APK (arm64)
+
+# Builds the Android app (arm64-v8a) on GitHub's runners, following the steps in README.md / CONTRIBUTING.md:
+#   android/deps/build_deps.sh      SDL3, shaderc, Vulkan headers, VMA, volk, DejaVu font
+#   android/deps/build_ffmpeg.sh    FFmpeg (the game's movies); fetches the Linux NDK r30 into ~/android-ndk-r30
+#   android/deps/build_gen_deps.sh  Python, zig, capstone, unicorn, lz4 (the on-device game code builder)
+#   gradlew assembleDebug           the APK
+# No game files are used or needed here: the game code is generated on the phone from the player's own dump.
+# NOT YET RUN: the first run may fail in a dependency step; the logs are uploaded either way.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [adreno740]
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env:
+      ANDROID_NDK_VERSION: 30.0.16248370
+      ANDROID_CMAKE_VERSION: 3.30.4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules "$AGENT_TOOLSDIRECTORY" || true
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y ninja-build pkg-config xz-utils
+
+      - name: Android SDK packages (NDK, CMake, platform 36)
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "ndk;${ANDROID_NDK_VERSION}" "cmake;${ANDROID_CMAKE_VERSION}" "platforms;android-36"
+          ls "$ANDROID_HOME/ndk" "$ANDROID_HOME/cmake"
+
+      - name: Cache native dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            android/deps/out
+            android/deps/src
+            ~/android-ndk-r30
+          key: deps-${{ runner.os }}-${{ hashFiles('android/deps/*.sh') }}
+
+      - name: Dependencies (SDL3, shaderc, headers)
+        run: bash android/deps/build_deps.sh 2>&1 | tee deps.log
+
+      - name: Dependencies (FFmpeg)
+        run: bash android/deps/build_ffmpeg.sh 2>&1 | tee ffmpeg.log
+
+      - name: Dependencies (game code builder)
+        run: bash android/deps/build_gen_deps.sh 2>&1 | tee gen_deps.log
+
+      - name: Build the APK
+        working-directory: android/botwrecompandroid
+        run: ./gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee ../../gradle.log
+
+      - name: Checksum
+        run: |
+          APK=$(ls android/botwrecompandroid/app/build/outputs/apk/debug/*.apk | head -1)
+          echo "APK=$APK" >> "$GITHUB_ENV"
+          sha256sum "$APK" | tee apk.sha256
+          ls -la "$APK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: botwrecompandroid-arm64-debug
+          path: |
+            ${{ env.APK }}
+            apk.sha256
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-logs
+          path: |
+            *.log
+          if-no-files-found: ignore
