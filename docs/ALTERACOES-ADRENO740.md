@@ -7,7 +7,11 @@ Regra deste registro: uma entrada só diz "corrigido" quando houver teste no apa
 
 | # | Alteração | Arquivos | Status |
 | --- | --- | --- | --- |
-| 1 | Workflow do GitHub Actions que compila o APK arm64 (debug) | `.github/workflows/build-apk.yml` | Escrito, **ainda não executado** |
+| 1 | Workflow do GitHub Actions que compila o APK arm64 (debug) | `.github/workflows/build-apk.yml` | 1ª execução (31/10/2026) **falhou** no passo do checksum: o APK não foi gerado |
+| 2 | Workflow: falhar de verdade nos passos com `\| tee` (`shell: bash`, pipefail) e publicar o fim dos logs na branch `ci-logs` | `.github/workflows/build-apk.yml` | Escrito, em teste |
+
+Na 1ª execução, os passos de dependências e do Gradle apareceram como "sucesso" porque o `tee` escondia o código de saída
+do comando; por isso o erro real ainda não é conhecido.
 
 Nenhuma alteração no renderizador, nos shaders ou no runtime até agora. A causa dos gráficos pretos no Adreno 740 **não foi
 identificada**: falta o log de uma execução com o defeito (`botwrecomp-log-previous.txt`) e a versão exata do app.
