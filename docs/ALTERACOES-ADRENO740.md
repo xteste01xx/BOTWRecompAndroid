@@ -8,7 +8,12 @@ Regra deste registro: uma entrada só diz "corrigido" quando houver teste no apa
 | # | Alteração | Arquivos | Status |
 | --- | --- | --- | --- |
 | 1 | Workflow do GitHub Actions que compila o APK arm64 (debug) | `.github/workflows/build-apk.yml` | 1ª execução (31/10/2026) **falhou** no passo do checksum: o APK não foi gerado |
-| 2 | Workflow: falhar de verdade nos passos com `\| tee` (`shell: bash`, pipefail) e publicar o fim dos logs na branch `ci-logs` | `.github/workflows/build-apk.yml` | Escrito, em teste |
+| 2 | Workflow: falhar de verdade nos passos com `\| tee` (`shell: bash`, pipefail) e publicar o fim dos logs na branch `ci-logs` | `.github/workflows/build-apk.yml` | Substituído pelo #3 (a branch `ci-logs` falhou) |
+
+| 3 | Workflow: logs como anotações da execução; `chmod +x gradlew` (o arquivo está sem permissão de execução no repositório: erro 126); 3 tentativas nos passos de dependências (queda de conexão ao baixar o FFmpeg) | `.github/workflows/build-apk.yml` | **Funcionou**: execução de 01/11/2026 terminou com `BUILD SUCCESSFUL` e gerou o APK debug arm64 (cerca de 97 MB zipado) |
+
+**APK gerado, mas ainda NÃO testado em aparelho.** É o projeto original (0.2.6-beta) compilado, sem nenhuma correção do
+renderizador. A causa da tela preta no Adreno 740 continua desconhecida: falta o log de uma execução com o defeito.
 
 Na 1ª execução, os passos de dependências e do Gradle apareceram como "sucesso" porque o `tee` escondia o código de saída
 do comando; por isso o erro real ainda não é conhecido.
