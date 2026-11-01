@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write  # (only to publish the end of the build logs to the ci-logs branch, last step)
+  contents: read
 
 # bash with -eo pipefail: a failing command before "| tee" fails its step (the default shell hides it)
 defaults:
@@ -102,23 +102,15 @@ jobs:
             *.log
           if-no-files-found: ignore
 
-      # The end of each log (and the lines that look like errors) goes to the ci-logs branch, so the build can be
-      # read from the repository without downloading artifacts. Only text from the build tools: no game files here.
-      - name: Publish log tails to the ci-logs branch
+      # The end of each log, as annotations of the run (readable from the API without downloading artifacts).
+      # Only text from the build tools: no game files here.
+      - name: Show log tails as annotations
         if: always()
         run: |
-          mkdir -p /tmp/ci
           for f in deps ffmpeg gen_deps gradle; do
             [ -f "$f.log" ] || continue
-            tail -n 300 "$f.log" > "/tmp/ci/$f.tail.txt"
-            grep -nEi "error|fatal|failed|cannot|not found|no such|undefined" "$f.log" | tail -n 80 > "/tmp/ci/$f.errors.txt" || true
+            E=$(grep -nEi "error:|fatal|FAILED|cannot find|not found|no such file|undefined reference|What went wrong" "$f.log" | tail -n 25 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
+            T=$(tail -n 25 "$f.log" | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=$f errors::$E"
+            echo "::notice title=$f tail::$T"
           done
-          { echo "run: $GITHUB_RUN_ID  sha: $GITHUB_SHA"; df -h / | tail -1; ls -la android/deps/out/lib android/deps/out/gen/lib 2>&1 | head -40; } > /tmp/ci/summary.txt
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git checkout --orphan ci-logs
-          git rm -rf . -q || true
-          cp /tmp/ci/* .
-          git add -A
-          git commit -q -m "build logs, run $GITHUB_RUN_ID"
-          git push -f origin ci-logs
