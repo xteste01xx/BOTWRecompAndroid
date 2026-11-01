@@ -12,6 +12,8 @@ Regra deste registro: uma entrada só diz "corrigido" quando houver teste no apa
 
 | 3 | Workflow: logs como anotações da execução; `chmod +x gradlew` (o arquivo está sem permissão de execução no repositório: erro 126); 3 tentativas nos passos de dependências (queda de conexão ao baixar o FFmpeg) | `.github/workflows/build-apk.yml` | **Funcionou**: execução de 01/11/2026 terminou com `BUILD SUCCESSFUL` e gerou o APK debug arm64 (cerca de 97 MB zipado) |
 
+| 4 | Junção (`merge`) do projeto original 0.2.10-beta na branch: traz as correções feitas desde a 0.2.6 (passes de renderização, arena de memória, ritmo de quadros, texturas do terreno) | todo o `runtime/` e `android/` | Compila (execução de 01/11/2026, `BUILD SUCCESSFUL`). **Não testado em aparelho** |
+
 **APK gerado, mas ainda NÃO testado em aparelho.** É o projeto original (0.2.6-beta) compilado, sem nenhuma correção do
 renderizador. A causa da tela preta no Adreno 740 continua desconhecida: falta o log de uma execução com o defeito.
 
@@ -31,3 +33,18 @@ identificada**: falta o log de uma execução com o defeito (`botwrecomp-log-pre
   do app instalado; se for outra, o Android recusa a atualização.
 - Limites conhecidos: nunca rodou; as dependências levam bastante tempo na primeira execução (há cache nas seguintes);
   o espaço em disco do runner pode ficar apertado.
+
+## Plano em etapas (um commit por etapa, branch `adreno740`)
+
+| Etapa | O que | Depende de | Estado |
+| --- | --- | --- | --- |
+| 1 | Workflow de compilação automática | nada | feito, funcionando |
+| 2 | Sincronizar com o projeto original (0.2.10) | nada | feito, compila |
+| 3 | Instalar o APK da etapa 2 e ver se a tela preta persiste | teste no POCO F6 Pro | **aguardando o usuário** |
+| 4 | Se persistir: ler o log (`botwrecomp-log-previous.txt`) e achar a causa: driver realmente em uso, pipelines de compute rejeitados, passes do G-buffer, caminhos que só valem no Adreno 8xx | log do aparelho | bloqueada |
+| 5 | Correção mínima da causa achada, atrás de uma condição só para Adreno 7xx (`vk_adreno_8xx` em `device.c` é o ponto de partida) | etapa 4 | bloqueada |
+| 6 | Perfil de desempenho para Adreno 740 (resolução, FPS, memória), com números medidos no aparelho | log com tempos de GPU | bloqueada |
+
+Motivo do bloqueio: o projeto original já foi testado com Adreno 740 + Turnip V38 e o mundo renderiza (issue #43), então o
+defeito pode ser da versão instalada, do driver escolhido ou de algo específico do aparelho. Sem o log, qualquer alteração no
+renderizador seria um palpite, e `Adreno 7xx` e `8xx` hoje seguem caminhos de código diferentes.

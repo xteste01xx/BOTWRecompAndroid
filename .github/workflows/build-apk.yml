@@ -6,12 +6,13 @@ name: Build APK (arm64)
 #   android/deps/build_gen_deps.sh  Python, zig, capstone, unicorn, lz4 (the on-device game code builder)
 #   gradlew assembleDebug           the APK
 # No game files are used or needed here: the game code is generated on the phone from the player's own dump.
-# NOT YET RUN: the first run may fail in a dependency step; the logs are uploaded either way.
+# The log tails are shown as annotations of the run (the last step); the logs are also uploaded as an artifact.
 
 on:
   workflow_dispatch:
   push:
     branches: [adreno740]
+    paths-ignore: ['docs/**', '**.md']
 
 concurrency:
   group: build-apk-${{ github.ref }}
