@@ -77,7 +77,9 @@ jobs:
 
       - name: Build the APK
         working-directory: android/botwrecompandroid
-        run: ./gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee ../../gradle.log
+        run: |
+          chmod +x ./gradlew  # (the file is not executable in the repository: exit 126)
+          ./gradlew assembleDebug --no-daemon --console=plain 2>&1 | tee ../../gradle.log
 
       - name: Checksum
         run: |
@@ -109,7 +111,7 @@ jobs:
         run: |
           for f in deps ffmpeg gen_deps gradle; do
             [ -f "$f.log" ] || continue
-            E=$(grep -nEi "error:|fatal|FAILED|cannot find|not found|no such file|undefined reference|What went wrong" "$f.log" | tail -n 25 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
+            E=$(grep -nEi "error:|fatal|FAILED|cannot find|not found|no such file|undefined reference|What went wrong" "$f.log" | tail -n 25 | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g' || true)
             T=$(tail -n 25 "$f.log" | cut -c1-300 | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=$f errors::$E"
             echo "::notice title=$f tail::$T"
