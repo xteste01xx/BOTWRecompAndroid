@@ -14,7 +14,7 @@ Regra deste registro: uma entrada só diz "corrigido" quando houver teste no apa
 
 | 4 | Junção (`merge`) do projeto original 0.2.10-beta na branch: traz as correções feitas desde a 0.2.6 (passes de renderização, arena de memória, ritmo de quadros, texturas do terreno) | todo o `runtime/` e `android/` | Compila (execução de 01/11/2026, `BUILD SUCCESSFUL`). **Não testado em aparelho** |
 
-**APK gerado, mas ainda NÃO testado em aparelho.** É o projeto original (0.2.6-beta) compilado, sem nenhuma correção do
+**APK gerado, mas ainda NÃO testado em aparelho.** É o projeto original (agora na 0.2.10-beta) compilado, sem nenhuma correção nossa do
 renderizador. A causa da tela preta no Adreno 740 continua desconhecida: falta o log de uma execução com o defeito.
 
 Na 1ª execução, os passos de dependências e do Gradle apareceram como "sucesso" porque o `tee` escondia o código de saída
