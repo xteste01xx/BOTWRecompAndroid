@@ -67,13 +67,16 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('android/deps/*.sh') }}
 
       - name: Dependencies (SDL3, shaderc, headers)
-        run: bash android/deps/build_deps.sh 2>&1 | tee deps.log
+        run: |
+          for try in 1 2 3; do bash android/deps/build_deps.sh 2>&1 | tee -a deps.log && exit 0; echo "retry $try (network?)"; sleep 20; done; exit 1
 
       - name: Dependencies (FFmpeg)
-        run: bash android/deps/build_ffmpeg.sh 2>&1 | tee ffmpeg.log
+        run: |
+          for try in 1 2 3; do bash android/deps/build_ffmpeg.sh 2>&1 | tee -a ffmpeg.log && exit 0; echo "retry $try (network?)"; sleep 20; done; exit 1
 
       - name: Dependencies (game code builder)
-        run: bash android/deps/build_gen_deps.sh 2>&1 | tee gen_deps.log
+        run: |
+          for try in 1 2 3; do bash android/deps/build_gen_deps.sh 2>&1 | tee -a gen_deps.log && exit 0; echo "retry $try (network?)"; sleep 20; done; exit 1
 
       - name: Build the APK
         working-directory: android/botwrecompandroid
